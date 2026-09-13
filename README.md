@@ -3,6 +3,8 @@
 **Pay for verified compute on Kaspa. A result is paid only when independent workers agree — and a
 worker that fabricates a result forfeits its bond.**
 
+**→ [Read what quorum is, in one page](https://kaspahttp402.github.io/quorum/)** — the rule in four verdicts, the economics, and the honest boundary.
+
 [metered](https://github.com/kaspahttp402/metered-protocol) settles work a buyer can **count** —
 bytes, tokens. It cannot reach **compute**, because a buyer usually cannot cheaply recompute a
 result to check it. Renting a GPU to run a job you can't verify is renting on trust, which is why

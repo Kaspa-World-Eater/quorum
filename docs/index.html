@@ -1,0 +1,173 @@
+<title>quorum</title>
+<meta name="description" content="Pay for verified compute on Kaspa: a result is paid only when independent workers agree — and a worker that fabricates a result forfeits its bond.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  :root{
+    --bg:#f0eef6; --surface:#ffffff; --surface-2:#f6f4fb; --ink:#151221; --muted:#565070; --faint:#867e9c; --line:#e2ddee;
+    --plum:#6d3bd4; --plum-deep:#4a238f; --plum-soft:#e6ddf9;
+    --agree:#2c9455; --slash:#c23a3a; --amber:#b7791f;
+    --shadow:0 1px 2px rgba(21,18,33,.05),0 12px 30px -16px rgba(21,18,33,.24);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b0912; --surface:#151220; --surface-2:#100d1a; --ink:#ece8f6; --muted:#a49cc0; --faint:#6f6690; --line:#251f38;
+      --plum:#a986f5; --plum-deep:#c9b4ff; --plum-soft:#1c1430; --agree:#4fce80; --slash:#ef7a7a; --amber:#e0a94a;
+      --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 34px -18px rgba(0,0,0,.72);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b0912; --surface:#151220; --surface-2:#100d1a; --ink:#ece8f6; --muted:#a49cc0; --faint:#6f6690; --line:#251f38;
+    --plum:#a986f5; --plum-deep:#c9b4ff; --plum-soft:#1c1430; --agree:#4fce80; --slash:#ef7a7a; --amber:#e0a94a;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 34px -18px rgba(0,0,0,.72);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg); color:var(--ink); font-family:"Public Sans",system-ui,sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px; margin:0 auto; padding:0 24px}
+  h1,h2,h3{font-family:"Bricolage Grotesque","Public Sans",sans-serif; line-height:1.07; text-wrap:balance; letter-spacing:-.02em; margin:0}
+  a{color:var(--plum-deep); text-decoration-color:color-mix(in srgb,var(--plum) 45%,transparent); text-underline-offset:3px}
+  a:hover{text-decoration-color:var(--plum)}
+  code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+  .eyebrow{font-family:"JetBrains Mono",monospace; font-size:12px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--plum-deep)}
+  header.top{display:flex; align-items:center; justify-content:space-between; padding:22px 0 8px}
+  .brand{display:flex; align-items:center; gap:10px; font-family:"Bricolage Grotesque"; font-weight:800; font-size:20px}
+  .toplinks{display:flex; gap:18px; font-size:14px}
+  .toplinks a{color:var(--muted); text-decoration:none} .toplinks a:hover{color:var(--ink)}
+  .hero{padding:30px 0 16px}
+  .hero h1{font-size:clamp(40px,7.5vw,74px); font-weight:800; letter-spacing:-.03em}
+  .hero h1 em{font-style:normal; color:var(--plum-deep)}
+  .hero .lede{font-size:clamp(18px,2.3vw,23px); color:var(--muted); max-width:40ch; margin:18px 0 0; line-height:1.4}
+  .hero .lede b{color:var(--ink); font-weight:600}
+  section{padding:38px 0; border-top:1px solid var(--line)}
+  section h2{font-size:clamp(25px,4vw,34px); font-weight:700; letter-spacing:-.02em; max-width:24ch}
+  .sub{color:var(--muted); font-size:17px; max-width:66ch; margin:14px 0 0}
+  p{margin:14px 0 0} p.body{max-width:66ch; color:var(--muted); font-size:16px} strong{color:var(--ink)}
+  table.v{width:100%; border-collapse:collapse; margin-top:22px; font-size:15px}
+  table.v th,table.v td{text-align:left; padding:13px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+  table.v thead th{font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint)}
+  table.v .verdict{font-family:"JetBrains Mono",monospace; font-weight:700; color:var(--ink); white-space:nowrap}
+  table.v .arrow{color:var(--faint)}
+  table.v .pay{color:var(--agree); font-weight:600} table.v .slash{color:var(--slash); font-weight:600} table.v .hold{color:var(--amber); font-weight:600} table.v .refund{color:var(--muted); font-weight:600}
+  .tblscroll{overflow-x:auto}
+  .twocol{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:24px}
+  @media (max-width:700px){.twocol{grid-template-columns:1fr}}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:var(--shadow)}
+  .card h3{font-size:18px; font-weight:700; margin-bottom:3px} .card p{font-size:14.5px; color:var(--muted); margin-top:6px}
+  .card .ic{font-family:"JetBrains Mono",monospace; font-size:12px; font-weight:700; color:var(--plum-deep); letter-spacing:.08em}
+  .pull{font-family:"Bricolage Grotesque"; font-weight:700; font-size:clamp(20px,2.9vw,26px); line-height:1.25; letter-spacing:-.02em; color:var(--ink); max-width:22ch; margin:0}
+  .files{margin-top:22px; border:1px solid var(--line); border-radius:13px; overflow:hidden; box-shadow:var(--shadow)}
+  .files .r{display:grid; grid-template-columns:170px 1fr; gap:14px; padding:13px 16px; border-bottom:1px solid var(--line); background:var(--surface)}
+  .files .r:last-child{border-bottom:0}
+  .files .f{font-family:"JetBrains Mono",monospace; font-size:13px; font-weight:700; color:var(--ink)} .files .d{color:var(--muted); font-size:14px}
+  @media (max-width:560px){.files .r{grid-template-columns:1fr; gap:3px}}
+  .honest{margin-top:20px; background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:18px 20px; font-size:15px; color:var(--muted)}
+  .honest b{color:var(--ink)}
+  .stack{display:flex; gap:14px; flex-wrap:wrap; margin-top:20px}
+  .btn{display:inline-flex; align-items:center; gap:9px; font-weight:600; font-size:15px; text-decoration:none; padding:12px 20px; border-radius:11px; border:1px solid var(--line); color:var(--ink); background:var(--surface)}
+  .btn.primary{background:var(--plum); border-color:var(--plum); color:#fff}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.primary{color:#0b0912}}
+  :root[data-theme="dark"] .btn.primary{color:#0b0912}
+  .btn:hover{border-color:var(--plum)}
+  footer{border-top:1px solid var(--line); margin-top:8px; padding:28px 0 56px; color:var(--faint); font-size:14px} footer a{color:var(--muted)}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">⚖️ quorum</div>
+    <nav class="toplinks"><a href="#rule">The rule</a><a href="#cost">The cost</a><a href="#built">What's built</a><a href="https://github.com/kaspahttp402/quorum">GitHub</a></nav>
+  </header>
+
+  <div class="hero">
+    <div class="eyebrow">Pay for verified compute · on Kaspa</div>
+    <h1>Only agreement gets paid. <em>A fabricated result forfeits its bond.</em></h1>
+    <p class="lede">Some work a buyer can count — bytes, tokens. <b>Compute it usually can't:</b> you
+      can't cheaply re-run a job to check it. So when you can't measure a result, quorum lets
+      <b>agreement measure it</b> — run it on independent workers, and pay only when they agree.</p>
+  </div>
+
+  <section id="why">
+    <div class="eyebrow">The gap it closes</div>
+    <h2>Renting compute you can't verify is renting on trust.</h2>
+    <p class="body">Every decentralized compute marketplace has the same problem: a worker says "I ran
+      your job, here's the result" — and the buyer has no cheap way to know if that's true. Which is
+      why the ones that exist all need a <strong>trusted operator in the middle</strong> holding the
+      money and settling disputes. quorum removes the operator: independent workers run the task, and
+      disagreement doesn't just fail it — it <strong>attributes blame</strong>, so the liar is slashed
+      and the honest one paid, on the same <a href="https://kaspa-x402.org">kaspa-x402</a> rail
+      <a href="https://kaspahttp402.github.io/spigot/">spigot</a> and
+      <a href="https://kaspahttp402.github.io/flume/">flume</a> settle on.</p>
+    <p class="pull">Agreement is the meter. The bond is what makes a lie cost something.</p>
+  </section>
+
+  <section id="rule">
+    <div class="eyebrow">The rule, in four verdicts</div>
+    <h2>A verdict is one of four things — and each moves money exactly one way.</h2>
+    <p class="sub">Nothing else is allowed to move money. Money moves only on a verdict, and only a
+      referee's ruling can take a bond.</p>
+    <div class="tblscroll">
+    <table class="v">
+      <thead><tr><th>Verdict</th><th></th><th>Settlement</th></tr></thead>
+      <tbody>
+        <tr><td class="verdict">agree</td><td class="arrow">→</td><td><span class="pay">PAY</span> the workers who produced the accepted result. Nobody lied.</td></tr>
+        <tr><td class="verdict">resolved</td><td class="arrow">→</td><td><span class="pay">PAY</span> the honest, <span class="slash">SLASH</span> the bond of the worker the referee caught.</td></tr>
+        <tr><td class="verdict">undecided</td><td class="arrow">→</td><td><span class="hold">HOLD</span> — two disagree, no referee has ruled. No money moves yet.</td></tr>
+        <tr><td class="verdict">inconclusive</td><td class="arrow">→</td><td><span class="refund">REFUND</span> the buyer. All three differ — an environment fault, nobody's fraud.</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="body" style="margin-top:18px">That last row is the one most systems get wrong: three
+      different results is almost never two liars — it's <strong>non-determinism</strong> (a mismatched
+      build, a driver, a backend). Slashing there punishes honest workers for the market's failure to
+      pin the environment down. quorum refunds instead. A worker is paid for a <strong>result</strong>,
+      not for effort; its <strong>bond</strong> — posted up front, forfeit only on <code>resolved</code>
+      — is what makes "I did the work" cost something to fake.</p>
+  </section>
+
+  <section id="cost">
+    <div class="eyebrow">The economics</div>
+    <h2>Verifying by agreement means running twice. Adaptive replication fixes that.</h2>
+    <p class="sub">Double-running everything is 2× the price of a trusted farm — no cryptographic
+      elegance survives that. So quorum doesn't double-run everything.</p>
+    <div class="twocol">
+      <div class="card"><div class="ic">EARN TRUST</div><h3>A proven worker is checked less</h3><p>Borrowed from BOINC's twenty-year-old idea: track a worker's clean record, and once it's long enough, replicate only at a random audit rate. The cost multiplier drifts from 2× toward ~1.05×.</p></div>
+      <div class="card"><div class="ic">NEVER BLINDLY</div><h3>But never zero, and never gameable</h3><p>A trusted worker is still audited at random, forever — and the choice is deterministic in the task id, so a worker can't shop for the unaudited job. One confirmed lie drops it back to full replication.</p></div>
+    </div>
+  </section>
+
+  <section id="built">
+    <div class="eyebrow">What's built</div>
+    <h2>The whole decision pipeline, as pure and tested logic.</h2>
+    <p class="sub">Each step reads the one before it and moves nothing — so every rule is provable
+      before a cent is at stake. Built test-first.</p>
+    <div class="files">
+      <div class="r"><span class="f">replication.ts</span><span class="d">replicate? — double-run a newcomer or a caught worker always, a proven one only at an audit floor</span></div>
+      <div class="r"><span class="f">adjudication.ts</span><span class="d">agree? — decides agree / resolved / undecided / inconclusive from content hashes, and names who lied</span></div>
+      <div class="r"><span class="f">settle.ts</span><span class="d">verdict → money — pay / pay-and-slash / hold / refund</span></div>
+      <div class="r"><span class="f">parties.ts + plan.ts</span><span class="d">money → rail actions — pay each on its channel, slash the caught to the buyer, never both</span></div>
+    </div>
+    <div class="stack">
+      <a class="btn primary" href="https://github.com/kaspahttp402/quorum">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        quorum on GitHub
+      </a>
+      <a class="btn" href="https://kaspahttp402.github.io/metered-protocol/">the metered rail</a>
+    </div>
+    <div class="honest">
+      <b>Honest boundary.</b> quorum verifies work whose output is <b>deterministic</b> for a fixed
+      input — a render, a hash, a seeded job — where two honest workers produce byte-identical output.
+      General ML compute is <b>not</b> that (float non-determinism across hardware), so it needs harder,
+      research-grade verification and quorum does not pretend to solve it. And this is the <b>trust and
+      payment core</b>, not a running compute network: nothing touches the chain yet — the rule is
+      proven first, on purpose. It reuses the verification core proved out in kaspa-depin.
+    </div>
+  </section>
+
+  <footer>
+    <b>quorum</b> — pay for verified compute on Kaspa, on the metered rail. Part of the suite:
+    <a href="https://kaspahttp402.github.io/metered-protocol/">metered</a> ·
+    <a href="https://kaspahttp402.github.io/spigot/">spigot</a> ·
+    <a href="https://kaspahttp402.github.io/flume/">flume</a> · quorum ·
+    <a href="https://github.com/kaspahttp402/cascade">cascade</a>. MIT-licensed. Testnet-track.
+  </footer>
+</div>
