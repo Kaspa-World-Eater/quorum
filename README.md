@@ -36,31 +36,34 @@ when a referee catches it — is what makes "I did the work" cost something to f
 
 ## What is here
 
-This is the first brick: the bridge from a verdict to the rail, proven in isolation.
+The whole pipeline, as pure decisions -- provable before any money is at stake. Each step reads the
+step before it and moves nothing:
 
 | | |
 |---|---|
-| `src/adjudication.ts` | the truth oracle — `adjudicate(a, b, referee?)` decides agree / resolved / undecided / inconclusive from content hashes, and names who lied. Vendored from kaspa-depin's verification core, generalised from rendering to any deterministic-output task. |
-| `src/settle.ts` | the new primitive — `settleVerified(verdict, terms)` turns a verdict into a settlement (pay / pay-and-slash / hold / refund). Pure: it names what should move, it moves nothing. |
+| `src/replication.ts` | **replicate?** -- `shouldReplicate(task, worker)` decides whether a task is double-run at all. A newcomer or a caught worker always; a proven worker only at a random audit floor. `replicationFactor` quotes the honest cost (~1.05x earned, 2x not). Vendored from kaspa-depin. |
+| `src/adjudication.ts` | **agree?** -- `adjudicate(a, b, referee?)` decides agree / resolved / undecided / inconclusive from content hashes, and names who lied. Vendored from kaspa-depin, generalised from rendering to any deterministic-output task. |
+| `src/settle.ts` | **verdict -> money** -- `settleVerified(verdict, terms)` turns a verdict into pay / pay-and-slash / hold / refund. |
+| `src/parties.ts` | the on-chain handles a settlement touches: the buyer's channel, each worker's payout address and posted bond. |
+| `src/plan.ts` | **money -> rail actions** -- `planActions(settlement, parties)` emits the exact, ordered moves: the price split exhaustively across the paid, every bond released to the honest or slashed to the buyer, never both. |
 
 ```bash
 npm install
-npm test          # 8 tests: the four verdicts map to the four settlements, end to end
+npm test          # 21 tests: replicate? -> agree? -> verdict -> rail actions, end to end
 ```
 
 ## Status
 
-The kernel runs and is pinned by tests. Nothing touches the chain yet — `settleVerified` is a pure
-decision, on purpose, so the rule is provable before any money is at stake.
+The entire pipeline runs as pure decisions, pinned by 21 tests: from "should this task be
+double-run?" through "did the workers agree?" to "what moves on the rail, and to whom." Nothing
+touches the chain yet -- on purpose, so every rule is provable before any money is at stake.
 
-**Next, in order:** post a worker's bond as a kaspa-x402 escrow the referee can slash; execute a
-settlement on the metered rail (pay the honest, take the bond, refund on fault); bring in
-kaspa-depin's **adaptive replication** so a trusted worker is re-run 1.05× rather than 2× while a
-newcomer is always checked; then a first real vertical — a deterministic GPU job (a render, a seeded
-inference) — end to end on testnet.
-
-Built on the same don't-trust-the-report idea as metered, and on the verification core proved out in
-kaspa-depin. Testnet only.
+**Next, in order:** the one open design question is the **bond**. metered's escrow is a one-way
+buyer-to-seller channel; a bond a fraud verdict can slash is a different shape -- a worker locks
+funds that release back to it on honest completion or a timeout, and to the buyer on a `resolved`
+verdict. That wants real research on the kaspa-x402 covenant rather than a rushed escrow (metered's
+own lesson). After it: execute a `RailAction` list live on testnet; then a first real vertical -- a
+deterministic GPU job (a render, a seeded inference) -- end to end.
 
 ## Licence
 
