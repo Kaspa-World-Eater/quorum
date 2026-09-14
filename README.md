@@ -43,7 +43,7 @@ step before it and moves nothing:
 
 | | |
 |---|---|
-| `src/replication.ts` | **replicate?** -- `shouldReplicate(task, worker)` decides whether a task is double-run at all. A newcomer or a caught worker always; a proven worker only at a random audit floor. `replicationFactor` quotes the honest cost (~1.05x earned, 2x not). Vendored from kaspa-depin. |
+| `src/replication.ts` | **replicate?** -- `shouldReplicate(task, worker)` decides whether a task is double-run at all. A newcomer or a caught worker always; a proven worker only at a periodic audit floor. `replicationFactor` quotes the honest cost (~1.05x earned, 2x not). Vendored from kaspa-depin. |
 | `src/adjudication.ts` | **agree?** -- `adjudicate(a, b, referee?)` decides agree / resolved / undecided / inconclusive from content hashes, and names who lied. Vendored from kaspa-depin, generalised from rendering to any deterministic-output task. |
 | `src/settle.ts` | **verdict -> money** -- `settleVerified(verdict, terms)` turns a verdict into pay / pay-and-slash / hold / refund. |
 | `src/parties.ts` | the on-chain handles a settlement touches: the buyer's channel, each worker's payout address and posted bond. |
@@ -59,6 +59,14 @@ npm test          # 21 tests: replicate? -> agree? -> verdict -> rail actions, e
 The entire pipeline runs as pure decisions, pinned by 21 tests: from "should this task be
 double-run?" through "did the workers agree?" to "what moves on the rail, and to whom." Nothing
 touches the chain yet -- on purpose, so every rule is provable before any money is at stake.
+
+**Honest limits.** Two things the pure logic does not do on its own: (1) the default audit sample is
+deterministic and *public* — reproducible, but not unpredictable. A submitter free to choose task ids
+can see which go un-audited and shop for them unless the injected `hash` is secret-keyed (an HMAC a
+trusted scheduler holds until the task ids are fixed). (2) Worker *agreement* is evidence, not proof:
+it supports a correct result only when the workers are genuinely independent and the task is
+reproducible, and an `inconclusive` verdict does not identify its own cause — commonly environment
+non-determinism, but a coordinated fault is not excluded.
 
 **Next, in order:** the one open design question is the **bond**. metered's escrow is a one-way
 buyer-to-seller channel; a bond a fraud verdict can slash is a different shape -- a worker locks

@@ -68,7 +68,7 @@ export function adjudicate(a: Testimony, b: Testimony, referee?: Testimony): Adj
   if (matches.length === 0) {
     return {
       outcome: 'inconclusive',
-      reason: 'all three runs differ, which points at non-determinism in the environment rather than fraud',
+      reason: 'all three runs differ; agreement was not reached, so the cause is unresolved -- commonly non-determinism in the environment, though a coordinated fault cannot be ruled out',
       hashes: { [a.workerId]: a.hash, [b.workerId]: b.hash, [referee.workerId]: referee.hash },
     };
   }

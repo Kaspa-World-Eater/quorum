@@ -54,7 +54,13 @@ export type ReplicationDecision =
   | { replicate: true; reason: 'untrusted' | 'too-few-jobs' | 'disputed' | 'random-audit' }
   | { replicate: false; reason: 'trusted' };
 
-/** Deterministic in the task id, so a worker cannot shop for an unaudited task. */
+/**
+ * Deterministic in (salt, taskId): the same inputs always give the same answer, which makes an audit
+ * reproducible and disputable. But deterministic is NOT unpredictable -- anyone who knows the salt and
+ * the task id can compute this, so with a plain public `hash` a submitter free to choose task ids can
+ * see which go un-audited and shop for them. It deters shopping only when `hash` is secret-keyed (see
+ * shouldReplicate's `hash` note).
+ */
 function sampled(taskId: string, salt: string, rate: number, hash: (s: string) => string): boolean {
   if (rate <= 0) return false;
   if (rate >= 1) return true;
@@ -64,7 +70,11 @@ function sampled(taskId: string, salt: string, rate: number, hash: (s: string) =
 
 /**
  * Should this task be run by a second worker? `hash` is injected so this stays dependency-free and
- * testable with a stub; pass a real content hash (blake3 / sha256 hex) in production.
+ * testable with a stub. In production pass a real content hash (blake3 / sha256 hex) -- but if
+ * submitters can choose their own task ids, use a SECRET-KEYED hash (an HMAC whose key a trusted
+ * scheduler keeps until the task ids are fixed), so the audit sample cannot be predicted or shopped.
+ * A plain public hash makes selection reproducible, not unpredictable; audit sampling alone is not a
+ * deterrent when the sample is knowable in advance.
  */
 export function shouldReplicate(
   taskId: string,
