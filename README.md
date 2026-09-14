@@ -67,6 +67,10 @@ verdict. That wants real research on the kaspa-x402 covenant rather than a rushe
 own lesson). After it: execute a `RailAction` list live on testnet; then a first real vertical -- a
 deterministic GPU job (a render, a seeded inference) -- end to end.
 
+## The bond, on chain
+
+quorum's slash was pure logic — a number in a settlement, with no on-chain teeth — because the kaspa-x402 escrow is the wrong shape for a bond a third party's verdict can seize. Kaspa's **Toccata** upgrade (live on mainnet 2026-06-30) changes that: its introspection opcodes let a covenant enforce where its money goes, so a bond can have two doors — refund to the worker after a timeout, or **slash to the buyer** on a referee's guilt verdict. Design, grounded in the real opcodes: **[docs/covenant-bond.md](docs/covenant-bond.md)**.
+
 ## Licence
 
 MIT.
