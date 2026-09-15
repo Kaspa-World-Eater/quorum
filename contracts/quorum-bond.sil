@@ -1,0 +1,44 @@
+pragma silverscript ^0.1.0;
+
+// Quorum's slashable bond -- the on-chain teeth a fraud verdict can actually seize.
+//
+// A worker posts a bond into this covenant before doing a job. There are exactly two ways out:
+//
+//   refund  (the honest path): after the deadline, no fraud was ever proven, so the worker signs
+//           and takes its own bond back.
+//
+//   slash   (the fraud path): the referee -- the adjudicator both sides named -- signs a GUILTY
+//           verdict, and that signature moves the whole bond to the BUYER. The verdict is signed
+//           over a digest that commits to the buyer's payout output, so consensus enforces WHERE
+//           the money goes; a spender cannot redirect the slash to itself without breaking the
+//           signature. checkMsgSig (OpCheckSigFromStack, Toccata) is what lets consensus verify a
+//           signature over that off-chain verdict, and tx.outputs[..] introspection (KIP-10) is
+//           what recomputes the digest from the outputs actually present.
+//
+// This is the on-chain half of quorum's settle(): resolved-guilty -> slash to buyer, honest ->
+// refund to worker. The referee/adjudicator's honesty is a reputation problem quorum's off-chain
+// adjudicate() + adaptive audit handles; the covenant is the teeth, not the judge.
+contract QuorumBond(pubkey worker, pubkey buyer, pubkey referee, byte[8] taskId, byte[8] deadlineBytes) {
+
+    // The digest the referee signs to rule the worker guilty of THIS task, paying THIS output.
+    // Binding the payout (value + scriptPubKey of output 0) means the same verdict signature
+    // cannot be replayed onto a different destination or amount -- the referee signs where the
+    // bond goes, and consensus recomputes this from the real output and checks it.
+    function guiltyDigest(): byte[32] {
+        byte[] pre = byte[](taskId) + byte[](buyer) + OpNum2Bin(tx.outputs[0].value, 8) + tx.outputs[0].scriptPubKey;
+        return blake3(pre);
+    }
+
+    // HONEST PATH. Only after the deadline, and only the worker, reclaims the bond.
+    entry refund(sig workerSig) {
+        require(tx.time >= temporal(int(deadlineBytes)));
+        require(checkSig(workerSig, worker));
+    }
+
+    // FRAUD PATH. A referee's guilty verdict slashes the whole bond to the buyer. One output only,
+    // so nothing is skimmed off to a third address; the digest pins that output to the buyer.
+    entry slash(datasig verdictSig) {
+        require(tx.outputs.length == 1);
+        require(checkMsgSig(verdictSig, guiltyDigest(), referee));
+    }
+}

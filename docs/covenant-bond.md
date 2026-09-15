@@ -80,9 +80,28 @@ opcodes. Heavier; the signature form is enough for a designated-adjudicator mode
 | Publisher-pays delivery (collusion-resistant) | No — proof *verification* exists, but who attests real delivery is unsolved. |
 | Retention / proof-of-storage payments | Partly — a challenge or storage proof is verifiable, but the payment-collusion economics remain. |
 
+## It compiles -- the teeth are real now
+
+The two-door bond above is written and compiles to Kaspa script: **[contracts/quorum-bond.sil](../contracts/quorum-bond.sil)**.
+
+```
+$ silverc contracts/quorum-bond.sil --constructor-args ... -o build/quorum-bond.json
+QuorumBond -> 191 bytes  (Kaspa element limit: 520)
+  refund(sig workerSig)         -- honest path, gated by the deadline
+  slash(datasig verdictSig)     -- fraud path, a referee verdict pays the buyer
+```
+
+`refund` checks `tx.time >= deadline` and the worker's signature. `slash` checks the referee's
+`checkMsgSig` (Toccata `OpCheckSigFromStack`) over a digest recomputed from the real payout output via
+KIP-10 introspection -- so consensus enforces that the money lands on the buyer. The off-chain half,
+the digest the referee signs, is [src/bond.ts](../src/bond.ts) `guiltyDigest()`, pinned by tests. The
+verdict quorum's `adjudicate()` produces is exactly what the referee signs.
+
 ## Next build
 
-Prototype the bond covenant against a Toccata-enabled node: express the two branches in the covenant
-toolchain, and run `post → resolved verdict → slash to buyer` and `post → timeout → refund to worker`
-end to end — the same shape spigot/flume/cascade proved for the payment channel, now for the bond.
+Take it live on a Toccata-enabled testnet: build the TS transaction layer (post the bond to the
+covenant address, and construct the `refund` and `slash` spends with their witness args and the KIP-10
+output), and run `post -> timeout -> refund to worker` and `post -> guilty verdict -> slash to buyer`
+end to end on chain -- the same shape spigot/flume/kascade proved for the payment channel, now for the
+bond. That live round-trip is also what confirms `guiltyDigest()`'s byte order against the covenant.
 This turns quorum's `settle`/`plan` from a decision into an *enforced* one.
