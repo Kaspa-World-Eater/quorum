@@ -10,7 +10,6 @@
  * remaining step; everything here is offline and testable.)
  */
 import { readFileSync } from 'node:fs';
-import { payToScriptHashScript, serializedScriptPublicKey } from '@kaspa-x402/covenant';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -75,10 +74,4 @@ export function quorumBondScript(p: BondParties): string {
  */
 export function bondWitness(entry: 'refund' | 'slash', argHex: string, redeemHex: string): string[] {
   return [argHex, bondDispatchTag(entry), redeemHex];
-}
-
-/** The P2SH scriptPublicKey to POST a bond to: locks the funds under this redeem script. Proven
- *  primitive (payToScriptHashScript) from the kaspa-x402 covenant SDK, so it is right offline. */
-export function bondLock(redeemHex: string): string {
-  return serializedScriptPublicKey(payToScriptHashScript(redeemHex));
 }

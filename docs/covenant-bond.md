@@ -103,22 +103,32 @@ Everything needed to construct a bond spend, except the live broadcast, is now c
 
 - `quorumBondScript(parties, taskId, deadline)` -- swaps the template's placeholders for the real
   worker/buyer/referee/task/deadline (each appears once in the 191-byte script), fits the 520 limit.
-- `bondLock(script)` -- the P2SH scriptPublicKey to POST a bond to (proven kaspa-x402 primitive).
+- `bondLock(script)` -- the P2SH scriptPublicKey to POST a bond to (proven kaspa-x402 primitive), in
+  [src/bondlock.ts](../src/bondlock.ts); kept apart so bondtx.ts stays dependency-free and the live
+  broadcast layer can import the redeem/witness logic without pulling in the covenant SDK.
 - `encodeDeadline` (little-endian 8 bytes), `bondDispatchTag(refund|slash)`, and `bondWitness` (the
   push order: entry args, then the dispatch tag, then the redeem script).
 - `guiltyDigest` -- with its encoding validated offline against the SilverScript simulator's golden
   vector, so the endianness/serialization bug class is closed before any chain spend.
 
-## Next build
+## Proven live on testnet-10
 
-Only the live broadcast remains: use the Kaspa WASM SDK to POST a bond to `bondLock(script)`, then
-build and submit two spends -- `refund` (a transaction the worker signs, with lockTime >= deadline,
-paying the worker) and `slash` (a single output to the buyer, authorized by the referee's datasig over
-`guiltyDigest`, no transaction signature) -- and run `post -> timeout -> refund` and
-`post -> guilty -> slash` on testnet-10. The witness is assembled with the SDK's ScriptBuilder in the
-order `bondWitness` names. That live round-trip is the final confirmation, and build the TS transaction layer (post the bond to the
-covenant address, and construct the `refund` and `slash` spends with their witness args and the KIP-10
-output), and run `post -> timeout -> refund to worker` and `post -> guilty verdict -> slash to buyer`
-end to end on chain -- the same shape spigot/flume/kascade proved for the payment channel, now for the
-bond. That live round-trip is also what confirms `guiltyDigest()`'s byte order against the covenant.
-This turns quorum's `settle`/`plan` from a decision into an *enforced* one.
+Both doors of the bond have now moved real testnet money, enforced by consensus. The driver is
+**[kaspa-depin/scripts/live-bond.ts](../../kaspa-depin/scripts/live-bond.ts)** (`npm run live:bond`),
+which posts a bond to the covenant address (P2SH over the 191-byte redeem script) and then, against a
+real node:
+
+- **refund** — after the deadline, the worker signs a spend (lockTime ≥ deadline) and reclaims its
+  own bond. **Accepted** — `bc2002ea…`.
+- **slash** — a referee's datasig over `guiltyDigest` moves a second bond to the buyer, single output.
+  **Accepted** — `f71b6c5d…`. Before it, on the same bond, two attacks were **refused by the chain**:
+  - an **early refund** (lockTime before the future deadline) → rejected as non-final: the temporal gate holds.
+  - a **redirected slash** (the same verdict, paying the *worker* instead) → rejected `failed to verify`:
+    the covenant recomputes `guiltyDigest()` from the *real* output via KIP-10 introspection, so a verdict
+    signed over the buyer's payout no longer matches when the output pays someone else. The referee signs
+    *where the money goes*, and consensus enforces it.
+
+That redirected-slash refusal is the byte-for-byte tie the deterministic tests couldn't give: the
+guilty-digest encoding (little-endian amount, version-prefixed scriptPubKey, field order) is now
+confirmed against the compiled covenant on chain, not just against the offline golden vector. This
+turns quorum's `settle`/`plan` from a decision into an *enforced* one — the teeth are real, and they bite.

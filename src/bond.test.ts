@@ -61,7 +61,8 @@ test('quorumBondScript binds real parties into a valid redeem script (placeholde
 });
 
 test('bondLock derives a deterministic P2SH lock, distinct per bond', async () => {
-  const { quorumBondScript, bondLock } = await import('./bondtx.js');
+  const { quorumBondScript } = await import('./bondtx.js');
+  const { bondLock } = await import('./bondlock.js');
   const a = quorumBondScript({ workerPubkeyHex: 'ab'.repeat(32), buyerPubkeyHex: 'cd'.repeat(32), refereePubkeyHex: 'ef'.repeat(32), taskId: '0123456789abcdef', deadlineMillis: 1_800_000_000_000n });
   const b = quorumBondScript({ workerPubkeyHex: 'ab'.repeat(32), buyerPubkeyHex: 'cd'.repeat(32), refereePubkeyHex: 'ef'.repeat(32), taskId: 'fedcba9876543210', deadlineMillis: 1_800_000_000_000n });
   const lockA = bondLock(a);
