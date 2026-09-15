@@ -46,3 +46,26 @@ test('the digest encoding agrees with the SilverScript compiler (simulator golde
   assert.equal(bytesToHex(blake3(pre)), '8662afb2cce1a3466e6c6680140b9eb9e4f44ddcef11922f344882d1261fea86',
     'our encoding reproduces the simulator-produced digest -> it matches the compiler');
 });
+
+test('quorumBondScript binds real parties into a valid redeem script (placeholders gone, still fits)', async () => {
+  const { quorumBondScript, encodeDeadline, bondDispatchTag } = await import('./bondtx.js');
+  const script = quorumBondScript({
+    workerPubkeyHex: 'ab'.repeat(32), buyerPubkeyHex: 'cd'.repeat(32), refereePubkeyHex: 'ef'.repeat(32),
+    taskId: '0123456789abcdef', deadlineMillis: 1_800_000_000_000n,
+  });
+  assert.ok(script.length / 2 <= 520, `fits the element limit (${script.length / 2} bytes)`);
+  assert.ok(script.includes('ab'.repeat(32)) && script.includes('cd'.repeat(32)) && script.includes('ef'.repeat(32)), 'real keys bound in');
+  assert.ok(!script.includes('11'.repeat(32)) && !script.includes('33'.repeat(32)), 'placeholders replaced');
+  assert.equal(encodeDeadline(1n), '0100000000000000', 'deadline is little-endian 8 bytes');
+  assert.notEqual(bondDispatchTag('refund'), bondDispatchTag('slash'), 'refund and slash select different entries');
+});
+
+test('bondLock derives a deterministic P2SH lock, distinct per bond', async () => {
+  const { quorumBondScript, bondLock } = await import('./bondtx.js');
+  const a = quorumBondScript({ workerPubkeyHex: 'ab'.repeat(32), buyerPubkeyHex: 'cd'.repeat(32), refereePubkeyHex: 'ef'.repeat(32), taskId: '0123456789abcdef', deadlineMillis: 1_800_000_000_000n });
+  const b = quorumBondScript({ workerPubkeyHex: 'ab'.repeat(32), buyerPubkeyHex: 'cd'.repeat(32), refereePubkeyHex: 'ef'.repeat(32), taskId: 'fedcba9876543210', deadlineMillis: 1_800_000_000_000n });
+  const lockA = bondLock(a);
+  assert.match(lockA, /^[0-9a-f]+$/i, 'a serialized scriptPublicKey');
+  assert.equal(bondLock(a), lockA, 'deterministic');
+  assert.notEqual(bondLock(b), lockA, 'a different task is a different bond and a different lock');
+});
