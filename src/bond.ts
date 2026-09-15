@@ -11,11 +11,17 @@ import { blake3 } from '@noble/hashes/blake3';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 
 /** 8-byte little-endian, matching the covenant's OpNum2Bin(value, 8) and the rail's le64 convention. */
-function le64(v: bigint): Uint8Array {
+export function le64(v: bigint): Uint8Array {
   const out = new Uint8Array(8);
   let x = v;
   for (let i = 0; i < 8; i++) { out[i] = Number(x & 0xffn); x >>= 8n; }
   return out;
+}
+
+/** A P2PK scriptPubKey exactly as the script sees it: 2-byte version (0), push32, x-only key,
+ *  OP_CHECKSIG. This is the byte form to pass as `payoutScriptPubKeyHex` for a buyer paid to P2PK. */
+export function p2pkScriptPubKey(xOnlyPubkeyHex: string): string {
+  return bytesToHex(new Uint8Array([0, 0, 0x20, ...hexToBytes(xOnlyPubkeyHex), 0xac]));
 }
 
 export interface GuiltyInput {
@@ -35,8 +41,12 @@ export interface GuiltyInput {
  * Identical to `guiltyDigest()` in contracts/quorum-bond.sil. Binding the payout output means one
  * verdict signature cannot be replayed to a different destination or amount.
  *
- * NOTE: the byte order follows Kaspa's OpNum2Bin/le64 convention; the round-trip of this digest
- * through a live Toccata `slash` spend is the next build slice (see docs/covenant-bond.md).
+ * The encoding PRIMITIVES (little-endian amount, version-prefixed scriptPubKey, blake3) are validated
+ * OFFLINE in bond.test.ts against a SilverScript-simulator-produced golden vector, so they agree with
+ * the compiler before any chain spend -- the check that catches an endianness/serialization bug offline
+ * rather than as "bad signature" on chain. This function reuses those primitives, with its field order
+ * kept identical to quorum-bond.sil's guiltyDigest() by construction; the final byte-for-byte tie of
+ * THIS field order is the live slash spend (or a simulator run when a test-runner build is at hand).
  */
 export function guiltyDigest(i: GuiltyInput): string {
   const pre = new Uint8Array([

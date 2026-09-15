@@ -27,3 +27,22 @@ test('the guilty digest is deterministic and binds the payout destination and am
   assert.notEqual(guiltyDigest({ ...base, payoutScriptPubKeyHex: 'bb'.repeat(35) }), d, 'a redirected payout changes the digest');
   assert.notEqual(guiltyDigest({ ...base, payoutValueSompi: 3_000_001n }), d, 'a changed amount changes the digest');
 });
+
+test('the digest encoding agrees with the SilverScript compiler (simulator golden vector)', async () => {
+  // Offline proof that our le64 + p2pk + blake3 primitives match the SCRIPT, using kaspa-depin's
+  // digest_check.tests.json golden digest -- which was produced by the SilverScript simulator, not by
+  // hand. Reproducing it with our own encoding proves the compiler and our TypeScript agree, the exact
+  // check that catches an endianness/serialization bug offline instead of as "bad signature" on chain.
+  const { blake3 } = await import('@noble/hashes/blake3');
+  const { bytesToHex, hexToBytes } = await import('@noble/hashes/utils');
+  const { le64, p2pkScriptPubKey } = await import('./bond.js');
+  const cat = (...a: Uint8Array[]) => new Uint8Array(a.flatMap((u) => [...u]));
+  // JobEscrowV2.verdictDigest over jobId cc*8, outputs [(60000000, 11*32), (39000000, 22*32)]
+  const pre = cat(
+    hexToBytes('cccccccccccccccc'),
+    le64(60_000_000n), hexToBytes(p2pkScriptPubKey('11'.repeat(32))),
+    le64(39_000_000n), hexToBytes(p2pkScriptPubKey('22'.repeat(32))),
+  );
+  assert.equal(bytesToHex(blake3(pre)), '8662afb2cce1a3466e6c6680140b9eb9e4f44ddcef11922f344882d1261fea86',
+    'our encoding reproduces the simulator-produced digest -> it matches the compiler');
+});
