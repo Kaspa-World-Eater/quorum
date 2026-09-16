@@ -7,9 +7,10 @@ self-proving covenant object. Proven live on testnet-10, 2026-09-16.*
 
 A participant — a fount, a worker, a publisher, one identity across every tool — holds one **deed**.
 Its state is two monotonic counters, `{good, bad}`: how many times the **authority** (the adjudicator
-both sides named, exactly quorum's referee) attested a good or a bad outcome. The deed's address *is*
-its state — `P2SH(template ‖ {good, bad})` — so it **rotates every time the tally moves**, and anyone
-who reads the deed off-chain computes the same reputation. Nothing to trust but the chain.
+both sides named, exactly quorum's referee) attested a good or a bad outcome. The deed's address *commits
+to* its state — `P2SH(template ‖ {good, bad})`, the UTXO carrying only that 32-byte hash while the program
+and state live in the redeem preimage revealed on a spend — so the address **rotates every time the tally
+moves**, and anyone who reads the deed off-chain computes the same reputation. Nothing to trust but the chain.
 
 Contract: **[contracts/reputation-deed.sil](../contracts/reputation-deed.sil)**, 411 bytes, three doors:
 
