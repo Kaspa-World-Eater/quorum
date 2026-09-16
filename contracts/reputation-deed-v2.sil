@@ -1,0 +1,55 @@
+pragma silverscript ^0.1.0;
+
+// ReputationDeed v2 -- identity as STATE, so a deed can be minted and read. v1 baked participantId and
+// owner into the template (unmintable, unreadable). Carrying them in State fixes both, as chess
+// player.sil carries player_id in state. `authority` stays a template pubkey: one adjudicator per
+// registry, never changes, so checkMsgSig uses it directly and the state stays small.
+contract ReputationDeedV2(
+    pubkey authority,
+    byte[32] initParticipantId,
+    byte[32] initOwner,
+    int initGood,
+    int initBad,
+) {
+    byte[32] participantId = initParticipantId;
+    byte[32] owner = initOwner;
+    int good = initGood;
+    int bad = initBad;
+
+    function attestDigest(int outcome) : byte[32] {
+        return blake3(byte[](participantId) + OpNum2Bin(good, 8) + OpNum2Bin(bad, 8) + OpNum2Bin(outcome, 8));
+    }
+
+    function verdictDigest() : byte[32] {
+        return blake3(
+            OpNum2Bin(tx.outputs[0].value, 8) + tx.outputs[0].scriptPubKey
+            + OpNum2Bin(tx.outputs[1].value, 8) + tx.outputs[1].scriptPubKey
+        );
+    }
+
+    entry attest(datasig authoritySig, int outcome) {
+        require(outcome == 0 || outcome == 1);
+        require(checkMsgSig(authoritySig, attestDigest(outcome), authority));
+        require(tx.outputs.length == 1);
+        require(tx.outputs[0].value + 1000000 >= tx.inputs[this.activeInputIndex].value);
+        int nextGood = good;
+        int nextBad = bad;
+        if (outcome == 1) {
+            nextGood = good + 1;
+        } else {
+            nextBad = bad + 1;
+        }
+        validateOutputState(0, State { participantId: participantId, owner: owner, good: nextGood, bad: nextBad });
+    }
+
+    entry dingByVerdict(datasig verdictSig) {
+        require(tx.outputs.length == 2);
+        require(checkMsgSig(verdictSig, verdictDigest(), authority));
+        validateOutputState(1, State { participantId: participantId, owner: owner, good: good, bad: bad + 1 });
+    }
+
+    entry retire(sig ownerSig, pubkey ownerPk) {
+        require(blake2b(byte[](ownerPk)) == owner);
+        require(checkSig(ownerSig, ownerPk));
+    }
+}
