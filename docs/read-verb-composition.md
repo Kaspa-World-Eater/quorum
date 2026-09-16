@@ -107,6 +107,30 @@ bump-rep + refile-card in one transaction — so getting this one right is getti
    one-directional — only the **deed reads the bond** — which is enough for "a slash dings the deed" and
    roughly halves the added logic. Add the reverse read (the bond requiring the ding) second.
 
+## Spike results (2026-09-16)
+
+**Risk 1 — the covenant side compiles.** [contracts/covgroup-spike.sil](../contracts/covgroup-spike.sil)
+is the smallest covenant that may be spent only in a group of exactly two and reads its sibling's state.
+It compiles to **94 bytes**: `OpInputCovenantId` / `OpCovInputCount` / `OpCovInputIdx` and same-template
+`readInputState` all work with our silverc. The read verb is expressible; the remaining question is size
+once it's grafted onto the 411-byte deed (measure at build time).
+
+**Risk 2 — the WASM SDK supports covenant groups.** kaspa-wasm 2.0.1 exposes exactly the primitives a
+genesis + group-spend needs, so the live tx is buildable (unlike a missing-feature dead end):
+
+- `covenantId(genesisOutpoint, authOutputs)` derives the shared id from a genesis outpoint and its
+  authorized outputs;
+- `new TransactionOutput(value, spk, covenant?)` where `covenant` is a
+  `CovenantBinding { authorizingInput, covenantId }` — this is how an output is bound to a covenant;
+- `GenesisCovenantGroup(authorizingInput, outputs[])` binds several outputs to one id at genesis;
+- a `covenantsEnabled` flag on the relevant config.
+
+So the genesis tx creates two outputs bound to one `covenantId`, and spending both forms the group
+`OpCovInputCount` sees as 2. The open work is purely construction: the high-level `createTransaction`
+builds standard outputs, so the genesis (and likely the group spend) must be assembled at the
+`Transaction` / `TransactionOutput` level with bindings attached, then broadcast — new tx-layer territory,
+now scoped, and its own focused effort.
+
 ## Build order for this piece
 
 Path A (atomic slash-and-ding) first, then the read verb proper:

@@ -1,0 +1,27 @@
+pragma silverscript ^0.1.0;
+
+// Read-verb spike: the smallest covenant proving a KIP-20 covenant GROUP works with our toolchain.
+// It may be spent ONLY alongside exactly one sibling in the same covenant group, and it reads that
+// sibling's state. Compiling this proves OpInputCovenantId / OpCovInputCount / OpCovInputIdx and the
+// same-template readInputState -- the mechanics the bond+deed composition needs. TESTNET SPIKE ONLY.
+contract CovGroupSpike(byte[32] tag, int initValue) {
+    int value = initValue;
+
+    // The linked door: this covenant is spendable only in a group of exactly two, and requires the two
+    // co-spent instances to hold consecutive values -- a stand-in for "the two objects agree on something".
+    entry linked() {
+        byte[32] cov = OpInputCovenantId(this.activeInputIndex);
+        require(OpCovInputCount(cov) == 2);
+
+        int me = this.activeInputIndex;
+        int a = OpCovInputIdx(cov, 0);
+        int b = OpCovInputIdx(cov, 1);
+        int sibling = a;
+        if (a == me) {
+            sibling = b;
+        }
+
+        State other = readInputState(sibling);
+        require(other.value == value + 1 || value == other.value + 1);
+    }
+}
