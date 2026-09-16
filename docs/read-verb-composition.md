@@ -86,6 +86,31 @@ change to the proven bond — then demonstrate the read verb properly on a **dee
 shape `chess/player.sil` uses. That separates "atomic composition" (valuable now) from "the read verb"
 (valuable as the objects multiply), instead of forcing both through one stateless-bond-shaped hole.
 
+## The composed door — settled design and measured size (2026-09-16)
+
+Working through it settled a cleaner design than "the bond reads the deed" (which the stateless bond makes
+awkward): **one referee datasig over a digest of both outputs, checked by both covenants.** Neither reads
+the other's state.
+
+- Shared digest, computable identically by both from the outputs alone:
+  `blake3(le64(out0.value) ‖ out0.spk ‖ le64(out1.value) ‖ out1.spk)`.
+- **deed `dingByVerdict(datasig v)`**: `require(outputs.length == 2)`; `checkMsgSig(v, digest, authority)`;
+  `validateOutputState(1, State { good, bad + 1 })` — the deed continues itself at output 1.
+- **bond `slashAndDing(datasig v)`**: `require(outputs.length == 2)`; require `out0.spk == P2PK(buyer)`;
+  `checkMsgSig(v, digest, referee)` — the slash pays the buyer at output 0.
+- With `bond.referee == deed.authority`, one signature authorises both. A valid transaction satisfies both
+  covenants or neither: the bond pays the buyer, the deed dings, together. (Weaker point, honestly: nothing
+  forces the *old* deed UTXO to be consumed rather than a phantom bad+1 minted alongside it — but only the
+  trusted referee could exploit that, and a referee that signs false verdicts is already out of the trust
+  model. Strong atomicity would need the accumulator's one-UTXO-per-identity guarantee.)
+
+**Measured, and it does not fit as-is.** Adding `dingByVerdict` to the deed compiles to **557 bytes — over
+the 520 limit.** Dropping the deed's `rebalance` door (owner stake top-up, replaceable by retire+repost)
+brings it to **473 bytes, which fits**, leaving `attest` / `dingByVerdict` / `retire`. So the composition
+is buildable with one trade: drop `rebalance`, or decompose the deed the way chess split its board. Dropping
+is far simpler and `rebalance` is the least load-bearing door; that is the recommended path. The bond's
+`slashAndDing` adds little to its 191 bytes and is not expected to be tight.
+
 ## Why this is the payoff, not just a feature
 
 It is the first time two tools compose into something **neither can do alone**, enforced by consensus
