@@ -125,19 +125,30 @@ genesis + group-spend needs, so the live tx is buildable (unlike a missing-featu
 - `GenesisCovenantGroup(authorizingInput, outputs[])` binds several outputs to one id at genesis;
 - a `covenantsEnabled` flag on the relevant config.
 
-So the genesis tx creates two outputs bound to one `covenantId`, and spending both forms the group
-`OpCovInputCount` sees as 2. The open work is purely construction: the high-level `createTransaction`
-builds standard outputs, so the genesis (and likely the group spend) must be assembled at the
-`Transaction` / `TransactionOutput` level with bindings attached, then broadcast — new tx-layer territory,
-now scoped, and its own focused effort.
+**Risk 2 — the covenant-group transaction works LIVE.** `kaspa-depin/scripts/live-covgroup.ts`
+(`npm run live:covgroup`) posted a genesis binding two spike outputs (state 5 and 6) to one covenant id,
+then **co-spent both in one transaction** with `OpCovInputCount == 2` enforced and each covenant reading
+its sibling — genesis `ae3da05f…`, group spend `1738996a…`, on testnet-10. The tx mechanic the whole
+composition depends on is proven; nothing about it is theoretical any more.
+
+The v1 construction recipe, learned the hard way and worth reusing verbatim:
+
+- The genesis binds outputs with `tx.populateGenesisCovenants([new GenesisCovenantGroup(authorizingInput, [0, 1])])`.
+- **Any transaction with a covenant output or input must be version 1.** `tx.version = 1; tx.gas = 0n;`.
+- **v1 replaced `sigOpCount` with a per-input `computeBudget`.** A node rejects a v1 tx still carrying the
+  old field, so for every input: `input.sigOpCount = 0; input.computeBudget = N;` then `tx.finalize()`
+  before signing (from metered's anchor.ts). Budget ~12 covers a P2PK sig; the group spend's covenant
+  inputs (they read a sibling) needed ~60 and massed ~12816, i.e. a ~1.28M sompi fee — budget drives mass,
+  so keep it as low as the script's unit use allows.
+- The group spend needs no transaction signature: the covenant inputs are authorised by their witness
+  (dispatch tag + redeem), and the node forms the group from the spent UTXOs' shared covenant id.
 
 ## Build order for this piece
 
 Path A (atomic slash-and-ding) first, then the read verb proper:
 
-1. **Spike the two-input covenant-group transaction** with the WASM SDK — two covenant inputs sharing one
-   covenant id, two constrained outputs. This is the unproven tx-layer mechanic (risk 2), and both paths
-   need it. Prove it on a throwaway pair before touching bond or deed.
+1. ~~Spike the two-input covenant-group transaction~~ **DONE** — proven live (`npm run live:covgroup`,
+   genesis `ae3da05f…`, group spend `1738996a…`). The tx mechanic both paths need is confirmed on chain.
 2. **Add a composed door to each covenant that checks one shared verdict digest** (path A): the bond's
    `slashAndDing` and the deed's `dingByBond` each require the referee's datasig over a digest committing
    to both outputs, and each requires exactly the two outputs present. Measure both covenants stay ≤520.
