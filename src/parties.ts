@@ -6,6 +6,7 @@
  * price is billed to, where each worker is paid, and each worker's posted bond that a fraud verdict
  * can take. This file is only those handles; it holds no policy and does no chain work.
  */
+import type { BondParties } from './bondtx.js';
 
 /** Where a worker is paid, on chain. */
 export interface Payee {
@@ -20,6 +21,13 @@ export interface Bond {
   /** the covenant id of the worker's bond escrow on the kaspa-x402 rail */
   covenantId: string;
   amountSompi: bigint;
+  /**
+   * The quorum-bond covenant this bond IS, when it is one -- the parameters that reconstruct its redeem
+   * script, address, and guilt digest (contracts/quorum-bond.sil). Present makes the bond EXECUTABLE: a
+   * slash decision can be turned into the actual on-chain spend (see execute.ts). Absent means the bond
+   * is only described abstractly and a slash stays a plan.
+   */
+  covenant?: BondParties;
 }
 
 /** Everyone in one task, with the handles a settlement will act on. */
