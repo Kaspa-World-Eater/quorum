@@ -1,0 +1,40 @@
+pragma silverscript ^0.1.0;
+
+// DeedRegistry -- mints canonical ReputationDeed v2 identities with consensus-unique ids. Each live
+// registry UTXO is one immutable registration lane. A `register` spend recreates the lane verbatim and
+// emits exactly one fresh deed whose participantId is derived from the SPENT registration outpoint:
+//   participantId = blake2b("DeedRegistry.participantId" || outpoint_txid || outpoint_index)
+// No mutable counter, so many lanes can register in parallel -- the DAG-native uniqueness dotk's keyspace
+// and chess league.sil both use. `deedTemplate` is the hash committing the v2 deed's template (prefix ||
+// suffix, which carries the adjudicator), so only canonical deeds under this registry's authority can mint.
+contract DeedRegistry(byte[32] deedTemplate) {
+
+    // The foreign deed's state layout, so validateOutputStateWithTemplate can build the fresh deed.
+    struct DeedState {
+        byte[32] participantId;
+        byte[32] owner;
+        int good;
+        int bad;
+    }
+
+    entry register(sig ownerSig, pubkey ownerPk, byte[] deedPrefix, byte[] deedSuffix) {
+        // The owner the deed is created for signs once -- proof the account is made for a willing owner.
+        require(checkSig(ownerSig, ownerPk));
+        byte[32] owner = blake2b(byte[](ownerPk));
+
+        // A unique id from the spent registration outpoint. Underivable in advance, distinct per lane spend.
+        byte[32] txid = byte[32](OpOutpointTxId(this.activeInputIndex));
+        byte[4] index = OpOutpointIndex(this.activeInputIndex) as byte[4];
+        byte[32] participantId = blake2b(byte[]("DeedRegistry.participantId") + txid + index);
+
+        DeedState fresh = DeedState { participantId: participantId, owner: owner, good: 0, bad: 0 };
+
+        // Fixed shape: recreate this immutable lane (output 0) and mint one deed (output 1).
+        require(OpAuthOutputCount(this.activeInputIndex) == 2);
+        int lane = OpAuthOutputIdx(this.activeInputIndex, 0);
+        require(tx.outputs[lane].scriptPubKey == tx.inputs[this.activeInputIndex].scriptPubKey);
+        require(tx.outputs[lane].value == tx.inputs[this.activeInputIndex].value);
+
+        validateOutputStateWithTemplate(OpAuthOutputIdx(this.activeInputIndex, 1), fresh, deedPrefix, deedSuffix, deedTemplate);
+    }
+}
