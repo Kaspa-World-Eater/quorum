@@ -1,0 +1,100 @@
+pragma silverscript ^0.1.0;
+
+// ReputationDeed -- the first plank of the fabric: an identity whose reputation is on-chain STATE,
+// not a number in someone's database. It is the participant-deed idea from dotk (state lives in the
+// address) built on two patterns already proven in our own and Sutton's code:
+//
+//   - metered_session.sil carries (seq, cumulativeSompi) forward with validateOutputState, live on
+//     testnet-10 -- so the "continue" verb (spend this covenant, re-create it with new state, its
+//     P2SH address rotating each time) is not new to us.
+//   - chess player.sil carries wins/draws/losses as separate MONOTONIC counters. That is the trick
+//     that makes reputation safe here: SilverScript's undefined behaviour is fail-OPEN, so a
+//     subtraction that underflows would let a bad spend succeed. Reputation therefore never
+//     subtracts -- it is two counters that only rise, and the score is computed off-chain from them.
+//
+// WHAT IT IS. A participant (a fount, a worker, a publisher -- one identity across every tool) holds
+// one deed. Its state is {good, bad}: how many times an AUTHORITY (the adjudicator both sides named,
+// exactly quorum's referee) attested a good or a bad outcome for this participant. Anyone reads the
+// deed off-chain and computes the same reputation -- self-proving, no index to trust.
+//
+// WHY IT MATTERS (the emergent part). Because it is one shared object, a good record earned serving
+// in kascade is the same stake a quorum worker draws on, and a fresh sybil identity forfeits all of
+// it. Reputation stops being five siloed databases and becomes one on-chain asset with skin in it.
+//
+// TRUST MODEL. The covenant is the teeth, not the judge: it enforces that only the named authority
+// can move the counters and that the deed continues intact. WHO attests honestly is quorum's
+// off-chain adjudicate() + adaptive audit problem, unchanged. This does not solve the fake-viewer
+// problem and makes no claim to; a patient sybil doing real cheap work still earns real marks.
+//
+// REPLAY. The attestation digest binds the CURRENT (good, bad), so a signature the authority made at
+// one tally is spent once and cannot be replayed after the counters advance -- the state is its own
+// nonce.
+//
+// UNDEFINED BEHAVIOUR. Fail-open, as above: every counter move is an addition; `outcome` is bounded
+// to {0,1} before use; the one value comparison is written as an addition (fee allowance), never a
+// subtraction. Nothing here is reviewed by anyone but its author. TESTNET ONLY.
+//
+// FEE ALLOWANCE 400000. Measured for metered_session: a one-signature-check, one-output continuation
+// masses under this on testnet-10, and a covenant that caps the fee below the node's floor forbids
+// every honest spend silently. Whoever closes may take up to this as fee.
+contract ReputationDeed(
+    pubkey authority,      // the adjudicator whose attestation may move the counters
+    byte[32] participantId, // this identity's id -- immutable, part of the address
+    byte[32] owner,         // blake2b(ownerPubkey): who may rebalance/retire the deed
+    int initGood,
+    int initBad,
+) {
+    // Contract state, carried from one spend to the next: monotonic tallies only.
+    int good = initGood;
+    int bad = initBad;
+
+    // The digest the authority signs to attest ONE outcome for THIS deed at its current tally.
+    // Binding (good, bad) makes the signature single-use: it stops matching once the state advances.
+    function attestDigest(int outcome) : byte[32] {
+        return blake3(
+            byte[](participantId)
+            + OpNum2Bin(good, 8)
+            + OpNum2Bin(bad, 8)
+            + OpNum2Bin(outcome, 8)
+        );
+    }
+
+    // ATTEST. The authority records one outcome (0 = bad, 1 = good). No owner signature: reputation
+    // is what OTHERS say about you, and the subject does not get to veto a bad mark. The spend must
+    // hand the deed straight back to itself, less a fee, with exactly one counter raised by one.
+    entry attest(datasig authoritySig, int outcome) {
+        require(outcome == 0 || outcome == 1);
+        require(checkMsgSig(authoritySig, attestDigest(outcome), authority));
+
+        // The stake returns to THIS covenant, carrying the new tally. One output, value preserved
+        // (fee allowance): the additive-continuation shape, so KIP-9 storage mass stays near zero.
+        // No underflow: the input value is a consensus-supplied UTXO amount and the test is an
+        // addition, total by construction.
+        require(tx.outputs.length == 1);
+        require(tx.outputs[0].value + 400000 >= tx.inputs[this.activeInputIndex].value);
+
+        int nextGood = good;
+        int nextBad = bad;
+        if (outcome == 1) {
+            nextGood = good + 1;
+        } else {
+            nextBad = bad + 1;
+        }
+        validateOutputState(0, State { good: nextGood, bad: nextBad });
+    }
+
+    // REBALANCE. The owner tops up or draws down the deed's stake without changing its reputation,
+    // by handing the UTXO back to the same script. Same-SPK continuity, exactly player.sil's shape.
+    entry rebalance(sig ownerSig, pubkey ownerPk) {
+        require(blake2b(byte[](ownerPk)) == owner);
+        require(checkSig(ownerSig, ownerPk));
+        require(tx.outputs.length >= 1);
+        require(tx.outputs[0].scriptPubKey == tx.inputs[this.activeInputIndex].scriptPubKey);
+    }
+
+    // RETIRE. The owner closes the account and reclaims the stake. Terminal: no continuation.
+    entry retire(sig ownerSig, pubkey ownerPk) {
+        require(blake2b(byte[](ownerPk)) == owner);
+        require(checkSig(ownerSig, ownerPk));
+    }
+}
