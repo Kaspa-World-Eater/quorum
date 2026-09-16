@@ -44,18 +44,19 @@ It compiles to **exactly 520 bytes — zero spare.** Any further field or door o
 full. If the registry needs the deed to carry more (a "minted-by" marker, say), the deed has to be
 decomposed the way chess split its board, or a door dropped. Measure before adding anything.
 
-## Adoption is a cascade (the next phase's first task)
+## Adoption cascade — progress
 
-Switching from v1 to v2 is not a drop-in — it ripples:
+Switching from v1 to v2 ripples; the order is layer, re-prove, then registry.
 
-1. **Rewrite the deterministic layer.** `deedtx.ts` currently swaps three template placeholders and writes
-   an 18-byte `(good, bad)` state. v2 has one template placeholder (`authority`) and an 84-byte
-   `(participantId, owner, good, bad)` state — the address now rotates on identity too, not just the tally.
-2. **Re-prove the deed and the composition on v2** — the live `attest → retire` and the `slash-and-ding`
-   round-trips, since the state layout and address derivation changed.
-3. **Then build the registry** (`league.sil`-shaped): a `DeedRegistry` lane that, per registration, recreates
-   itself and spawns a v2 deed with `participantId = blake2b(domain ‖ spent-outpoint)` — consensus-unique
-   ids, no counter, parallel lanes (the DAG-native property), via `validateOutputStateWithTemplate`.
-
-That order — layer, re-prove, then registry — is the same rhythm every covenant here has followed:
-deterministic first, live second, compose third.
+1. **Deterministic layer — DONE.** `src/deedv2.ts` rebuilds the v2 redeem: one template placeholder
+   (`authority`) and an 84-byte `(participantId, owner, good, bad)` state, so the address rotates on
+   identity as well as tally. Unit-tested (`src/deedv2.test.ts`).
+2. **Re-prove the deed live — DONE.** `kaspa-depin/scripts/live-deedv2.ts` (`npm run live:deedv2`) moved a
+   v2 deed `0/0 → 1/0 → 1/1` across three rotating addresses, refused a stale attestation, and retired the
+   stake (`9000cd55…`) — identity-as-state is tied to consensus. The **composition needs no rework**: the
+   bond's `slashAndDing` never inspects the deed's structure (it checks output 0 and the shared verdict
+   digest), so it already composes with a v2 deed as-is.
+3. **Build the registry — NEXT** (`league.sil`-shaped): a `DeedRegistry` lane that, per registration,
+   recreates itself and spawns a v2 deed with `participantId = blake2b(domain ‖ spent-outpoint)` —
+   consensus-unique ids, no counter, parallel lanes (the DAG-native property), via
+   `validateOutputStateWithTemplate`. This is the piece v2 was for.
