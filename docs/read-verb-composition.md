@@ -96,6 +96,12 @@ other. The fabric's first cross-tool composition is real. It passed on the first
 piece under it — the verdict digest, the serialized-scriptPubKey encoding, the v0 covenant spend, the
 witness order — was already proven in the bond, deed, and covenant-group steps.
 
+And the atomicity is *proven*, not just demonstrated: the run first attempts three attacks, each **refused
+by consensus** — a verdict signed for different values than the outputs carry (the covenants recompute the
+digest), the slash redirected to an attacker instead of the buyer (the bond's `out0.spk == P2PK(buyer)`
+check), and a faked ding where output 1 is not the deed's bad+1 continuation (the deed's
+`validateOutputState`). You cannot forge the verdict, redirect the slash, or skip the ding.
+
 ## The composed door — settled design and measured size (2026-09-16)
 
 Working through it settled a cleaner design than "the bond reads the deed" (which the stateless bond makes
