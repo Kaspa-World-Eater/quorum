@@ -34,9 +34,11 @@ pragma silverscript ^0.1.0;
 // to {0,1} before use; the one value comparison is written as an addition (fee allowance), never a
 // subtraction. Nothing here is reviewed by anyone but its author. TESTNET ONLY.
 //
-// FEE ALLOWANCE 400000. Measured for metered_session: a one-signature-check, one-output continuation
-// masses under this on testnet-10, and a covenant that caps the fee below the node's floor forbids
-// every honest spend silently. Whoever closes may take up to this as fee.
+// FEE ALLOWANCE 1000000. metered_session's 400000 was measured for ITS spend; an attest carrying this
+// 411-byte redeem masses 4054 on testnet-10 and the node demands 405400 -- just over 400000, which
+// forbade every attest silently until this was raised. Measured, not guessed: the node named 405400 on
+// a live run. A covenant that caps the fee below the node's floor forbids every honest spend, so this
+// sits above it with room; whoever closes may take up to this as fee (0.01 KAS, bounded).
 contract ReputationDeed(
     pubkey authority,      // the adjudicator whose attestation may move the counters
     byte[32] participantId, // this identity's id -- immutable, part of the address
@@ -71,7 +73,7 @@ contract ReputationDeed(
         // No underflow: the input value is a consensus-supplied UTXO amount and the test is an
         // addition, total by construction.
         require(tx.outputs.length == 1);
-        require(tx.outputs[0].value + 400000 >= tx.inputs[this.activeInputIndex].value);
+        require(tx.outputs[0].value + 1000000 >= tx.inputs[this.activeInputIndex].value);
 
         int nextGood = good;
         int nextBad = bad;
