@@ -27,7 +27,7 @@ const BYTECODE = CONTRACT.compiled.bytecode;
 const SPAN = CONTRACT.compiled.state_span;
 
 /** The dispatch tag a spend pushes to select an entry, read from the compiled artifact. */
-export const deedDispatchTag = (entry: 'attest' | 'rebalance' | 'retire'): string => {
+export const deedDispatchTag = (entry: 'attest' | 'dingByVerdict' | 'retire'): string => {
   const tag = CONTRACT.entries[entry]?.dispatch_tag;
   if (!tag) throw new Error(`reputation-deed has no entry "${entry}"`);
   return tag;
@@ -45,8 +45,8 @@ const TEMPLATE_HEX = bytesToHex(Uint8Array.from(BYTECODE));
 /**
  * Replace EVERY occurrence of a placeholder run with a real value, refusing unless it appears at least
  * once and none remain after. All, not one: SilverScript inlines a constructor parameter at every use
- * site, so a param used in two entries (owner, in rebalance and retire) is baked into the bytecode
- * twice, and both copies must be swapped.
+ * site, so a param referenced in more than one entry is baked into the bytecode more than once, and
+ * every copy must be swapped.
  */
 function swapAll(hex: string, fromHex: string, toHex: string, what: string): string {
   if (fromHex.length !== toHex.length) throw new Error(`reputation-deed: ${what} must be ${fromHex.length / 2} bytes, got ${toHex.length / 2}`);
@@ -88,6 +88,6 @@ export function deedRedeem(p: DeedParties): string {
  *   rebalance: [ ownerTxSig, ownerPubkey ]
  *   retire:    [ ownerTxSig, ownerPubkey ]
  */
-export function deedWitness(entry: 'attest' | 'rebalance' | 'retire', args: string[], redeemHex: string): string[] {
+export function deedWitness(entry: 'attest' | 'dingByVerdict' | 'retire', args: string[], redeemHex: string): string[] {
   return [...args, deedDispatchTag(entry), redeemHex];
 }

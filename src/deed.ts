@@ -50,3 +50,26 @@ export function reputationScore(good: number, bad: number): number {
   if (good < 0 || bad < 0) throw new Error('reputation-deed: counters are monotonic and non-negative');
   return (good + 1) / (good + bad + 2);
 }
+
+export interface VerdictOutput {
+  /** the output's value in sompi */
+  valueSompi: bigint;
+  /** the output's serialized scriptPublicKey (2-byte LE version ‖ script), as OpTxOutputSpk pushes it */
+  spkHex: string;
+}
+
+/**
+ * The digest one referee signature authorises for the atomic slash-and-ding: it commits to BOTH
+ * transaction outputs -- output 0 (the bond's slash to the buyer) and output 1 (the deed continued to
+ * bad+1). Identical to `verdictDigest()` in BOTH reputation-deed.sil and quorum-bond.sil, which each
+ * recompute it from the real outputs via KIP-10 introspection, so neither covenant reads the other's
+ * state: the shared signature over the shared outputs is the whole binding.
+ *   blake3( le64(out0.value) ‖ out0.spk ‖ le64(out1.value) ‖ out1.spk )
+ */
+export function verdictDigest(out0: VerdictOutput, out1: VerdictOutput): string {
+  const pre = new Uint8Array([
+    ...le64(out0.valueSompi), ...hexToBytes(out0.spkHex),
+    ...le64(out1.valueSompi), ...hexToBytes(out1.spkHex),
+  ]);
+  return bytesToHex(blake3(pre));
+}

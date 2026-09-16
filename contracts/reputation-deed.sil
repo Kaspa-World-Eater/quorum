@@ -85,13 +85,25 @@ contract ReputationDeed(
         validateOutputState(0, State { good: nextGood, bad: nextBad });
     }
 
-    // REBALANCE. The owner tops up or draws down the deed's stake without changing its reputation,
-    // by handing the UTXO back to the same script. Same-SPK continuity, exactly player.sil's shape.
-    entry rebalance(sig ownerSig, pubkey ownerPk) {
-        require(blake2b(byte[](ownerPk)) == owner);
-        require(checkSig(ownerSig, ownerPk));
-        require(tx.outputs.length >= 1);
-        require(tx.outputs[0].scriptPubKey == tx.inputs[this.activeInputIndex].scriptPubKey);
+    // VERDICT DIGEST -- commits to BOTH transaction outputs, so one referee signature authorises a slash
+    // (output 0, the co-spent bond's concern) and this ding (output 1) together. The bond checks the same
+    // digest, computed identically from the outputs, so neither covenant reads the other's state.
+    function verdictDigest() : byte[32] {
+        return blake3(
+            OpNum2Bin(tx.outputs[0].value, 8) + tx.outputs[0].scriptPubKey
+            + OpNum2Bin(tx.outputs[1].value, 8) + tx.outputs[1].scriptPubKey
+        );
+    }
+
+    // DING BY VERDICT -- the composed door. Co-spent with the bond under ONE referee signature: the bond
+    // takes output 0 to the buyer, and this deed continues itself to bad+1 at output 1. A valid transaction
+    // satisfies both covenants or neither, so a slash and its reputation cost are one atomic fact.
+    // (`rebalance` was dropped to fit this door under the 520-byte limit; stake is still adjustable by
+    // retire-and-repost.)
+    entry dingByVerdict(datasig verdictSig) {
+        require(tx.outputs.length == 2);
+        require(checkMsgSig(verdictSig, verdictDigest(), authority));
+        validateOutputState(1, State { good: good, bad: bad + 1 });
     }
 
     // RETIRE. The owner closes the account and reclaims the stake. Terminal: no continuation.

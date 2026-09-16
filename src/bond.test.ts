@@ -11,12 +11,13 @@ import { guiltyDigest } from './bond.js';
 
 const artifact = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../contracts/build/quorum-bond.json'), 'utf8'));
 
-test('the bond covenant compiled: two doors (refund/slash), inside Kaspa\'s 520-byte limit', () => {
+test('the bond covenant compiled: three doors (refund/slash/slashAndDing), inside Kaspa\'s 520-byte limit', () => {
   const c = artifact.contracts.QuorumBond;
-  assert.deepEqual(Object.keys(c.entries).sort(), ['refund', 'slash']);
+  assert.deepEqual(Object.keys(c.entries).sort(), ['refund', 'slash', 'slashAndDing']);
   assert.ok(c.compiled.bytecode.length <= 520, `fits the element limit (${c.compiled.bytecode.length} bytes)`);
   assert.equal(c.entries.refund.params[0].type.kind, 'sig', 'refund takes the worker signature');
   assert.equal(c.entries.slash.params[0].type.kind, 'datasig', 'slash takes the referee verdict signature');
+  assert.equal(c.entries.slashAndDing.params[0].type.kind, 'datasig', 'the composed slash takes the referee verdict signature');
 });
 
 test('the guilty digest is deterministic and binds the payout destination and amount', () => {

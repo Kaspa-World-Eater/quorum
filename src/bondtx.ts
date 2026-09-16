@@ -20,7 +20,7 @@ const CONTRACT = artifact.contracts.QuorumBond as {
 };
 
 /** The dispatch tag a spend pushes to select an entry, read from the compiled artifact. */
-export const bondDispatchTag = (entry: 'refund' | 'slash'): string => {
+export const bondDispatchTag = (entry: 'refund' | 'slash' | 'slashAndDing'): string => {
   const tag = CONTRACT.entries[entry]?.dispatch_tag;
   if (!tag) throw new Error(`quorum-bond has no entry "${entry}"`);
   return tag;
@@ -34,12 +34,15 @@ export function encodeDeadline(millis: bigint): string {
   return b.toString('hex');
 }
 
-/** Swap a placeholder for a real value, refusing unless it appears exactly `expected` times. */
-function swapExactly(hex: string, from: string, to: string, expected: number, what: string): string {
+// Replace EVERY occurrence of a placeholder run with the real value, refusing unless it appears at least
+// once and none remain after. All, not one: SilverScript inlines a constructor parameter at every use
+// site, so a param used in two entries (buyer and referee both appear in slashAndDing) is baked in twice.
+function swapAll(hex: string, from: string, to: string, what: string): string {
   if (from.length !== to.length) throw new Error(`quorum-bond: ${what} must be ${from.length / 2} bytes, got ${to.length / 2}`);
-  const count = hex.split(from).length - 1;
-  if (count !== expected) throw new Error(`quorum-bond: expected ${expected} occurrence(s) of ${what}, found ${count}`);
-  return hex.split(from).join(to);
+  if (!hex.includes(from)) throw new Error(`quorum-bond: ${what} placeholder not found -- template drifted`);
+  const out = hex.split(from).join(to);
+  if (out.includes(from)) throw new Error(`quorum-bond: a ${what} placeholder survived the swap`);
+  return out;
 }
 
 const PLACEHOLDER = { worker: '11'.repeat(32), buyer: '22'.repeat(32), referee: '33'.repeat(32), taskId: 'cc'.repeat(8), deadline: 'dd'.repeat(8) };
@@ -56,12 +59,12 @@ export interface BondParties {
 export function quorumBondScript(p: BondParties): string {
   const hex32 = (n: string, v: string): string => { if (!/^[0-9a-f]{64}$/i.test(v)) throw new Error(`quorum-bond: ${n} must be 32-byte hex`); return v.toLowerCase(); };
   let hex = Buffer.from(CONTRACT.compiled.bytecode).toString('hex');
-  hex = swapExactly(hex, PLACEHOLDER.worker, hex32('worker', p.workerPubkeyHex), 1, 'worker');
-  hex = swapExactly(hex, PLACEHOLDER.buyer, hex32('buyer', p.buyerPubkeyHex), 1, 'buyer');
-  hex = swapExactly(hex, PLACEHOLDER.referee, hex32('referee', p.refereePubkeyHex), 1, 'referee');
+  hex = swapAll(hex, PLACEHOLDER.worker, hex32('worker', p.workerPubkeyHex), 'worker');
+  hex = swapAll(hex, PLACEHOLDER.buyer, hex32('buyer', p.buyerPubkeyHex), 'buyer');
+  hex = swapAll(hex, PLACEHOLDER.referee, hex32('referee', p.refereePubkeyHex), 'referee');
   if (!/^[0-9a-f]{16}$/i.test(p.taskId)) throw new Error('quorum-bond: taskId must be 8-byte hex');
-  hex = swapExactly(hex, PLACEHOLDER.taskId, p.taskId.toLowerCase(), 1, 'taskId');
-  hex = swapExactly(hex, PLACEHOLDER.deadline, encodeDeadline(p.deadlineMillis), 1, 'deadline');
+  hex = swapAll(hex, PLACEHOLDER.taskId, p.taskId.toLowerCase(), 'taskId');
+  hex = swapAll(hex, PLACEHOLDER.deadline, encodeDeadline(p.deadlineMillis), 'deadline');
   if (hex.length / 2 > 520) throw new Error(`quorum-bond: redeem script ${hex.length / 2} bytes, over the 520 limit`);
   return hex;
 }
@@ -72,6 +75,6 @@ export function quorumBondScript(p: BondParties): string {
  *   refund: [ workerTxSig ]      -> reclaim after the deadline
  *   slash:  [ refereeVerdictSig ] -> a guilty verdict pays the buyer
  */
-export function bondWitness(entry: 'refund' | 'slash', argHex: string, redeemHex: string): string[] {
+export function bondWitness(entry: 'refund' | 'slash' | 'slashAndDing', argHex: string, redeemHex: string): string[] {
   return [argHex, bondDispatchTag(entry), redeemHex];
 }

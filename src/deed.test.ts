@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { attestDigest, reputationScore } from './deed.js';
+import { attestDigest, reputationScore, verdictDigest } from './deed.js';
 import { deedRedeem, deedDispatchTag, encodeStateInt } from './deedtx.js';
 
 const artifact = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../contracts/build/reputation-deed.json'), 'utf8'));
@@ -23,7 +23,7 @@ const PARTIES = {
 
 test('the deed covenant compiled: three doors, inside Kaspa\'s 520-byte limit', () => {
   assert.ok(CONTRACT.compiled.bytecode.length <= 520, `fits the element limit (${CONTRACT.compiled.bytecode.length} bytes)`);
-  for (const door of ['attest', 'rebalance', 'retire']) assert.ok(CONTRACT.entries[door], `has entry ${door}`);
+  for (const door of ['attest', 'dingByVerdict', 'retire']) assert.ok(CONTRACT.entries[door], `has entry ${door}`);
   assert.equal(CONTRACT.runtime_state.fields.map((f: { name: string }) => f.name).join(','), 'good,bad', 'state is (good, bad)');
 });
 
@@ -88,8 +88,19 @@ test('deedRedeem binds the parties: different authority, id, or owner is a diffe
   assert.throws(() => deedRedeem({ ...PARTIES, authorityPubkeyHex: 'ab', good: 0, bad: 0 }), /32-byte hex/);
 });
 
+test('verdictDigest binds both outputs, so one signature authorises the slash and the ding together', () => {
+  const o0 = { valueSompi: 1_000_000_000n, spkHex: '0000' + '20' + 'ab'.repeat(32) + 'ac' };
+  const o1 = { valueSompi: 500_000_000n, spkHex: '0000' + 'aa20' + 'cd'.repeat(32) + '87' };
+  const d = verdictDigest(o0, o1);
+  assert.match(d, /^[0-9a-f]{64}$/, '32-byte hex');
+  assert.equal(verdictDigest(o0, o1), d, 'deterministic');
+  assert.notEqual(verdictDigest({ ...o0, valueSompi: o0.valueSompi + 1n }, o1), d, 'moving a sompi on output 0 changes it');
+  assert.notEqual(verdictDigest(o0, { ...o1, spkHex: '0000' + 'aa20' + 'ee'.repeat(32) + '87' }), d, 'a different deed continuation changes it');
+  assert.notEqual(verdictDigest(o1, o0), d, 'the two outputs are not interchangeable');
+});
+
 test('each entry has a distinct dispatch tag', () => {
-  const tags = ['attest', 'rebalance', 'retire'].map((e) => deedDispatchTag(e as 'attest'));
+  const tags = ['attest', 'dingByVerdict', 'retire'].map((e) => deedDispatchTag(e as 'attest'));
   assert.equal(new Set(tags).size, 3, 'no two doors share a tag');
   assert.throws(() => deedDispatchTag('nope' as 'attest'), /no entry/);
 });

@@ -41,4 +41,22 @@ contract QuorumBond(pubkey worker, pubkey buyer, pubkey referee, byte[8] taskId,
         require(tx.outputs.length == 1);
         require(checkMsgSig(verdictSig, guiltyDigest(), referee));
     }
+
+    // The digest committing BOTH outputs, so one referee signature can authorise this slash (output 0 to
+    // the buyer) and a co-spent reputation deed's ding (output 1) together. Computed identically by the
+    // deed's dingByVerdict, so neither covenant reads the other's state.
+    function verdictDigest(): byte[32] {
+        byte[] pre = OpNum2Bin(tx.outputs[0].value, 8) + tx.outputs[0].scriptPubKey
+            + OpNum2Bin(tx.outputs[1].value, 8) + tx.outputs[1].scriptPubKey;
+        return blake3(pre);
+    }
+
+    // COMPOSED FRAUD PATH. The same guilty verdict slashes the bond to the buyer AND dings the worker's
+    // reputation deed, atomically: output 0 pays the buyer, output 1 is the deed continued to bad+1, both
+    // under one referee signature the deed checks too. Either both covenants are satisfied, or neither is.
+    entry slashAndDing(datasig verdictSig) {
+        require(tx.outputs.length == 2);
+        require(tx.outputs[0].scriptPubKey == byte[](new ScriptPubKeyP2PK(buyer)));
+        require(checkMsgSig(verdictSig, verdictDigest(), referee));
+    }
 }
