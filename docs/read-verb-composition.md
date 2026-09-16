@@ -86,6 +86,16 @@ change to the proven bond — then demonstrate the read verb properly on a **dee
 shape `chess/player.sil` uses. That separates "atomic composition" (valuable now) from "the read verb"
 (valuable as the objects multiply), instead of forcing both through one stateless-bond-shaped hole.
 
+## PROVEN LIVE on testnet-10 (2026-09-16)
+
+`kaspa-depin/scripts/live-slashding.ts` (`npm run live:slashding`) ran it end to end on a real chain: it
+posted a 5 KAS bond and a reputation deed at tally 2/0, then **one referee signature slashed the bond to
+the buyer and dinged the deed to 2/1 in a single transaction** (`654f0a0f…`). The buyer received the 5 KAS;
+the deed advanced (reputation 0.750 → 0.600) carrying its stake; neither half could happen without the
+other. The fabric's first cross-tool composition is real. It passed on the first broadcast because every
+piece under it — the verdict digest, the serialized-scriptPubKey encoding, the v0 covenant spend, the
+witness order — was already proven in the bond, deed, and covenant-group steps.
+
 ## The composed door — settled design and measured size (2026-09-16)
 
 Working through it settled a cleaner design than "the bond reads the deed" (which the stateless bond makes
