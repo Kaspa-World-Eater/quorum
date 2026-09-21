@@ -1,7 +1,7 @@
 KCC: 5
 Title: Deed Identity Registry
 Description: A covenant that mints a reputation deed with a fresh identity derived from the spent registration outpoint.
-Authors: Kasp-World-Eater
+Authors: Kaspa-World-Eater
 Comments-URI: https://kas-smiths.org/t/three-covenant-kccs-for-reputation-bonds-and-identity-live-on-testnet-10/148
 Status: Draft
 Type: Standards Track

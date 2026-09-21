@@ -20,6 +20,6 @@ What I am looking for before I PR:
 - Whether the shared verdictDigest is the right seam for composing two covenants without either reading the other's state, or whether there is a preferred convention for atomic composition.
 - Whether reputation belongs in a KCC at all, or whether the community would rather standardise identity and leave the tally to applications.
 
-Reference implementation, contracts, tests, and the live-proof scripts:  https://github.com/Kasp-World-Eater/quorum
+Reference implementation, contracts, tests, and the live-proof scripts:  https://github.com/Kaspa-World-Eater/quorum
 
 Full drafts (Abstract, Specification, Rationale, Conformance Vectors, Reference Implementation, Security Considerations) are attached / linked below. Happy to revise on feedback before anything goes to kaspanet/kccs. Thanks for reading.
