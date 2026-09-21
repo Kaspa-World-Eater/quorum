@@ -12,7 +12,9 @@
  * stores no chain state and does no I/O -- a live layer feeds it receipts and DAA scores.
  */
 import { OutcomeLedger, CONFIRMATION_FLOOR } from './confirmations.js';
-import type { SlashReceipt } from './broadcast.js';
+import { broadcastSettlementSlashes, type SlashChain, type SlashReceipt } from './broadcast.js';
+import type { Settlement } from './settle.js';
+import type { TaskParties } from './parties.js';
 
 export class SettlementLedger {
   private readonly ledger = new OutcomeLedger<SlashReceipt>();
@@ -40,4 +42,25 @@ export class SettlementLedger {
   revertedBy(newTipDaaScore: bigint): SlashReceipt[] {
     return this.ledger.revert(newTipDaaScore);
   }
+}
+
+/** A settlement chain that can also report the block a broadcast tx landed in -- the DAA score the ledger
+ *  tags each slash with. A live layer awaits confirmation and reads it; a test supplies it. */
+export interface ConfirmingChain extends SlashChain {
+  blockDaaScoreOf(txid: string): Promise<bigint>;
+}
+
+/**
+ * The full settlement path with reorg-safety built in: broadcast each of a settlement's slashes, record each
+ * into `ledger` tagged with the block it landed in, and return the receipts. The caller then reads
+ * `ledger.settled(tip)` to act only on final slashes, and calls `ledger.revertedBy(newTip)` on a reorg to
+ * un-ding the deeds a reorg undid. This is `settle -> plan -> execute -> broadcast -> confirm/revert` as one
+ * call, the chain interactions still injected so it stays unit-tested and SDK-free.
+ */
+export async function runSettlementSlashes(
+  chain: ConfirmingChain, parties: TaskParties, settlement: Settlement, spendFeeSompi: bigint, ledger: SettlementLedger,
+): Promise<SlashReceipt[]> {
+  const receipts = await broadcastSettlementSlashes(chain, parties, settlement, spendFeeSompi);
+  for (const r of receipts) ledger.record(r, await chain.blockDaaScoreOf(r.txid));
+  return receipts;
 }
