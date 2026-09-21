@@ -2,7 +2,7 @@ KCC: 4
 Title: Slashable Bond Covenant
 Description: A bond a worker funds that refunds after a deadline or slashes to a buyer on a referee's signed verdict.
 Authors: kaspahttp402
-Comments-URI: https://kas-smiths.org/
+Comments-URI: https://kas-smiths.org/t/three-covenant-kccs-for-reputation-bonds-and-identity-live-on-testnet-10/148
 Status: Draft
 Type: Standards Track
 Category: Covenant
