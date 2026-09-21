@@ -6,7 +6,7 @@ This PR adds three related Standards Track / Category: Covenant KCCs as Draft. T
 
 The three share one seam: a verdictDigest over both transaction outputs lets the bond and the deed compose atomically without either covenant reading the other's program.
 
-Discussion thread (Kas-Smiths): <forum URL>
-Reference implementation: https://github.com/kaspahttp402/quorum
+Discussion thread (Kas-Smiths): https://kas-smiths.org/t/three-covenant-kccs-for-reputation-bonds-and-identity-live-on-testnet-10/148
+Reference implementation: https://github.com/Kasp-World-Eater/quorum
 
 Requesting numbers to be assigned. Happy to split into separate PRs if the editors prefer. These `Requires: KCC-1, KCC-2` and are submitted as Draft; they are not proposed for Final ahead of their dependencies.

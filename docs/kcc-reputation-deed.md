@@ -1,7 +1,7 @@
 KCC: 3
 Title: Reputation Deed Covenant
 Description: A covenant holding a monotonic good and bad tally that a named authority advances one mark at a time.
-Authors: kaspahttp402
+Authors: Kasp-World-Eater
 Comments-URI: https://kas-smiths.org/t/three-covenant-kccs-for-reputation-bonds-and-identity-live-on-testnet-10/148
 Status: Draft
 Type: Standards Track

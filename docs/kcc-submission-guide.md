@@ -28,7 +28,7 @@ I cannot do this step: I have no forum account, and it must be posted as you.
 
 The editors assign the real KCC numbers, so we submit with the template's `KCC: ?` and let them number it (KCC-0 lets them assign sequentially). Files in that repo are named `kcc-NNNN.md`; until a number is assigned, use a descriptive branch and let the editor rename, or ask in the PR for numbers.
 
-Exact commands (run from anywhere; `gh` is already signed in as `kaspahttp402`):
+Exact commands (run from anywhere; `gh` is already signed in as `Kasp-World-Eater`):
 
 ```
 gh repo fork kaspanet/kccs --clone --remote
