@@ -90,7 +90,7 @@ shape `chess/player.sil` uses. That separates "atomic composition" (valuable now
 
 `kaspa-depin/scripts/live-slashding.ts` (`npm run live:slashding`) ran it end to end on a real chain: it
 posted a 5 KAS bond and a reputation deed at tally 2/0, then **one referee signature slashed the bond to
-the buyer and dinged the deed to 2/1 in a single transaction** (`654f0a0f…`). The buyer received the 5 KAS;
+the buyer and dinged the deed to 2/1 in a single transaction** ([`654f0a0f687665c57dae2327d899c57a92dc97a671137be50233077325e011ba`](https://explorer-tn10.kaspa.org/txs/654f0a0f687665c57dae2327d899c57a92dc97a671137be50233077325e011ba)). The buyer received the 5 KAS;
 the deed advanced (reputation 0.750 → 0.600) carrying its stake; neither half could happen without the
 other. The fabric's first cross-tool composition is real. It passed on the first broadcast because every
 piece under it — the verdict digest, the serialized-scriptPubKey encoding, the v0 covenant spend, the
@@ -169,7 +169,7 @@ genesis + group-spend needs, so the live tx is buildable (unlike a missing-featu
 **Risk 2 — the covenant-group transaction works LIVE.** `kaspa-depin/scripts/live-covgroup.ts`
 (`npm run live:covgroup`) posted a genesis binding two spike outputs (state 5 and 6) to one covenant id,
 then **co-spent both in one transaction** with `OpCovInputCount == 2` enforced and each covenant reading
-its sibling — genesis `ae3da05f…`, group spend `1738996a…`, on testnet-10. The tx mechanic the whole
+its sibling — genesis [`ae3da05f05a5d07675989cf37916695d5d9b6e9c7a0dd47802d2b043a401a602`](https://explorer-tn10.kaspa.org/txs/ae3da05f05a5d07675989cf37916695d5d9b6e9c7a0dd47802d2b043a401a602), group spend [`1738996a29fb60eb986a114aa9be211e93dbdca3c1fc886f08beed5b540513da`](https://explorer-tn10.kaspa.org/txs/1738996a29fb60eb986a114aa9be211e93dbdca3c1fc886f08beed5b540513da), on testnet-10. The tx mechanic the whole
 composition depends on is proven; nothing about it is theoretical any more.
 
 The v1 construction recipe, learned the hard way and worth reusing verbatim:
@@ -189,7 +189,7 @@ The v1 construction recipe, learned the hard way and worth reusing verbatim:
 Path A (atomic slash-and-ding) first, then the read verb proper:
 
 1. ~~Spike the two-input covenant-group transaction~~ **DONE** — proven live (`npm run live:covgroup`,
-   genesis `ae3da05f…`, group spend `1738996a…`). The tx mechanic both paths need is confirmed on chain.
+   genesis [`ae3da05f05a5d07675989cf37916695d5d9b6e9c7a0dd47802d2b043a401a602`](https://explorer-tn10.kaspa.org/txs/ae3da05f05a5d07675989cf37916695d5d9b6e9c7a0dd47802d2b043a401a602), group spend [`1738996a29fb60eb986a114aa9be211e93dbdca3c1fc886f08beed5b540513da`](https://explorer-tn10.kaspa.org/txs/1738996a29fb60eb986a114aa9be211e93dbdca3c1fc886f08beed5b540513da)). The tx mechanic both paths need is confirmed on chain.
 2. **Add a composed door to each covenant that checks one shared verdict digest** (path A): the bond's
    `slashAndDing` and the deed's `dingByBond` each require the referee's datasig over a digest committing
    to both outputs, and each requires exactly the two outputs present. Measure both covenants stay ≤520.

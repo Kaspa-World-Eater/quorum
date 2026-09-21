@@ -43,9 +43,9 @@ old digest no longer matches, so a captured attestation cannot be replayed — t
 `kaspa-depin/scripts/live-deed.ts` (`npm run live:deed`) posts a deed and moves it on a real node:
 
 - **post → attest good → attest bad → retire** — reputation went `0/0 → 1/0 → 1/1` across **three real
-  transactions, each at a different deed address** (retire `ec4177ec…`). The owner reclaimed the stake.
+  transactions, each at a different deed address** (retire [`ec4177ecdd88fd8dceae32113aec7e1e6bebcbe9602bfac2d2b15319da97cce3`](https://explorer-tn10.kaspa.org/txs/ec4177ecdd88fd8dceae32113aec7e1e6bebcbe9602bfac2d2b15319da97cce3)). The owner reclaimed the stake.
 - **A stale `(0,0)` attestation replayed against the `(1,0)` deed was refused** by consensus
-  (`failed to verify`, `9f287b26…`) — the byte-for-byte tie of `attestDigest`'s encoding to the compiled
+  (`failed to verify`; a refused spend has no on-chain record to link, so the pin is the re-run: `npm run live:deed` in kaspa-depin) — the byte-for-byte tie of `attestDigest`'s encoding to the compiled
   covenant, the confirmation only a chain can give.
 
 Two live lessons are baked into the code now: the WASM fee estimator under-pays this tx's mass, so the

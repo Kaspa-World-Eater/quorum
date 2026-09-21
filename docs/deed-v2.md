@@ -53,7 +53,7 @@ Switching from v1 to v2 ripples; the order is layer, re-prove, then registry.
    identity as well as tally. Unit-tested (`src/deedv2.test.ts`).
 2. **Re-prove the deed live — DONE.** `kaspa-depin/scripts/live-deedv2.ts` (`npm run live:deedv2`) moved a
    v2 deed `0/0 → 1/0 → 1/1` across three rotating addresses, refused a stale attestation, and retired the
-   stake (`9000cd55…`) — identity-as-state is tied to consensus. The **composition needs no rework**: the
+   stake ([`9000cd55b714f5dc17e5d9c35c14685be89e55ec759ef65e9fa2b42aa902a576`](https://explorer-tn10.kaspa.org/txs/9000cd55b714f5dc17e5d9c35c14685be89e55ec759ef65e9fa2b42aa902a576)) — identity-as-state is tied to consensus. The **composition needs no rework**: the
    bond's `slashAndDing` never inspects the deed's structure (it checks output 0 and the shared verdict
    digest), so it already composes with a v2 deed as-is.
 3. **Build the registry — NEXT** (`league.sil`-shaped): a `DeedRegistry` lane that, per registration,

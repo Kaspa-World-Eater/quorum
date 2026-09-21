@@ -119,9 +119,9 @@ which posts a bond to the covenant address (P2SH over the 191-byte redeem script
 real node:
 
 - **refund** — after the deadline, the worker signs a spend (lockTime ≥ deadline) and reclaims its
-  own bond. **Accepted** — `bc2002ea…`.
+  own bond. **Accepted** — [`bc2002ea7bb755b615e05328877cf370b09711a1dad6c82a0aa039b3f9ae345e`](https://explorer-tn10.kaspa.org/txs/bc2002ea7bb755b615e05328877cf370b09711a1dad6c82a0aa039b3f9ae345e).
 - **slash** — a referee's datasig over `guiltyDigest` moves a second bond to the buyer, single output.
-  **Accepted** — `f71b6c5d…`. Before it, on the same bond, two attacks were **refused by the chain**:
+  **Accepted** — [`f71b6c5dd1dff86391d7ba60372b357da654913f74387fd69d4bfeb392bcb6f4`](https://explorer-tn10.kaspa.org/txs/f71b6c5dd1dff86391d7ba60372b357da654913f74387fd69d4bfeb392bcb6f4). Before it, on the same bond, two attacks were **refused by the chain**:
   - an **early refund** (lockTime before the future deadline) → rejected as non-final: the temporal gate holds.
   - a **redirected slash** (the same verdict, paying the *worker* instead) → rejected `failed to verify`:
     the covenant recomputes `guiltyDigest()` from the *real* output via KIP-10 introspection, so a verdict
