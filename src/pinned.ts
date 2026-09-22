@@ -20,3 +20,15 @@ export function truncatedIds(text: string): TruncatedId[] {
   });
   return out;
 }
+
+/**
+ * A transaction cited AS PROOF: a whole id inside an explorer link. A bare 64-hex value in a code
+ * block is as likely a digest or a test vector (the KCC drafts hold six) and has no chain record
+ * to fetch; the rule that made every proof "full id + explorer link" is what tells the two apart.
+ */
+const CITED_TX = /explorer(?:-tn1[01])?\.kaspa\.org\/txs\/([0-9a-f]{64})\b/g;
+
+/** Every transaction id linked to an explorer in `text`, each once, in first-seen order. */
+export function citedIds(text: string): string[] {
+  return [...new Set([...text.matchAll(CITED_TX)].map((m) => m[1] as string))];
+}

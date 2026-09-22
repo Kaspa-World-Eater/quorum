@@ -1,0 +1,49 @@
+{
+ "txid": "81c3008f1fe5d79508105ada9b0760f4de52651de8b38a5039f549aeffaf172d",
+ "network": "testnet-10",
+ "explorer": "https://explorer-tn10.kaspa.org/txs/81c3008f1fe5d79508105ada9b0760f4de52651de8b38a5039f549aeffaf172d",
+ "source": "https://api-tn10.kaspa.org/transactions/81c3008f1fe5d79508105ada9b0760f4de52651de8b38a5039f549aeffaf172d",
+ "fetchedAt": "2026-09-22T10:37:35.381Z",
+ "transaction": {
+  "subnetwork_id": "0000000000000000000000000000000000000000",
+  "transaction_id": "81c3008f1fe5d79508105ada9b0760f4de52651de8b38a5039f549aeffaf172d",
+  "hash": "83e4387609d344c1ea0597215a9c09083b0197d5cda9b7acf140d1852e9e91c8",
+  "mass": "3947",
+  "payload": null,
+  "block_hash": [
+   "24c5997cc09b67adae62dce3dcd487e40ab45d8075db19126b8952d4788f51e8"
+  ],
+  "block_time": 1790008041069,
+  "version": 0,
+  "is_accepted": true,
+  "accepting_block_hash": "23c1110c367959071d26efc10e9ac67924af1009e6a3db6aeef2cb83fedd3dc3",
+  "accepting_block_blue_score": 565268486,
+  "accepting_block_time": 1790008041497,
+  "inputs": [
+   {
+    "transaction_id": "81c3008f1fe5d79508105ada9b0760f4de52651de8b38a5039f549aeffaf172d",
+    "index": 0,
+    "previous_outpoint_hash": "6b0f11813a7faffcaac3681d9bf0c4d2d70db63282e5dfdbfef063fff3a4f66a",
+    "previous_outpoint_index": "0",
+    "previous_outpoint_address": null,
+    "previous_outpoint_amount": null,
+    "signature_script": "401e5e1eafc1b7e5b323103ba5c6c0bd6604ac5f9d8a3aa47e6d6ead1b7a6bb37646722b53beee623241b3eb72b724cfc8a3b8900a2927e38572ebdf8e12c7717a04aa853a8e4d3c01760417a2027b876375768201419d750877f901c5a001000076050088526a74a269b07620bacf8099b0f6c43a8bf344035ba3b97de31dca368ff9d7b44c9726f442b41b2aac697551677604aa853a8e876375768201409d75b4519c69087c6a948fac3ae595201c7aed4036eab752f5b0b7047b54456d3e1089c32fdab7e4797fb3b82ab3cfa97e00c258cd7e00c37e76d9527978209aeb16ec82578b7a0efbda097585ac75820a425d8e09f8d90ec50752febd8a67d769757575516776048b82e976876375768201409d75b4529c6900c303000020201c7aed4036eab752f5b0b7047b54456d3e1089c32fdab7e4797fb3b82ab3cfa97e01ac7e876900c258cd00c37e51c258cd7e51c37e76d9527978209aeb16ec82578b7a0efbda097585ac75820a425d8e09f8d90ec50752febd8a67d76975757551676a686868",
+    "sig_op_count": "3",
+    "compute_budget": null,
+    "covenant_id": null
+   }
+  ],
+  "outputs": [
+   {
+    "transaction_id": "81c3008f1fe5d79508105ada9b0760f4de52651de8b38a5039f549aeffaf172d",
+    "index": 0,
+    "amount": 99000000,
+    "script_public_key": "201c7aed4036eab752f5b0b7047b54456d3e1089c32fdab7e4797fb3b82ab3cfa9ac",
+    "script_public_key_address": "kaspatest:qqw84m2qxm4tw5h4kzmsg765g4knuyyfcvha4dly09lm8wp2k086jx4dvwnge",
+    "script_public_key_type": "pubkey",
+    "covenant_authorizing_input": null,
+    "covenant_id": null
+   }
+  ]
+ }
+}

@@ -9,7 +9,8 @@
   },
   "scripts": {
     "test": "node --import tsx --test src/**/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "harvest": "tsx tools/harvest.ts"
   },
   "dependencies": {
     "@noble/hashes": "^1.8.0",
